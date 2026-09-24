@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Centro de Comando</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/estilos.css">
+  <style>
+    #app { max-width: 900px; }
+    .fila-login { display: grid; gap: 10px; }
+    input {
+      width: 100%; font: inherit; color: var(--texto); background: var(--panel-2);
+      border: 1px solid var(--borde); border-radius: 12px; padding: 12px 14px;
+    }
+    .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin: 20px 0; }
+    .kpi { background: var(--panel); border: 1px solid var(--borde); border-radius: var(--radio); padding: 14px 16px; }
+    .kpi b { display: block; font-family: 'Space Grotesk', sans-serif; font-size: 1.9rem; line-height: 1.1; color: var(--acento); }
+    .kpi span { color: var(--suave); font-size: .85rem; }
+    .kpi.alerta b { color: #ff6b6b; }
+    .grupo-dim { margin-top: 28px; }
+    .grupo-dim > h2 { font-size: .8rem; letter-spacing: .14em; color: var(--acento); margin: 0 0 10px; }
+    .tarjeta { background: var(--panel); border: 1px solid var(--borde); border-radius: var(--radio); padding: 16px 18px; margin-bottom: 12px; }
+    .tarjeta h3 { margin: 0 0 10px; font-size: 1.02rem; }
+    .barra { display: grid; grid-template-columns: minmax(120px, 42%) 1fr 64px; gap: 10px; align-items: center; font-size: .9rem; margin: 6px 0; }
+    .barra .pista { height: 10px; background: var(--panel-2); border-radius: 99px; overflow: hidden; }
+    .barra .pista div { height: 100%; background: var(--acento); border-radius: 99px; }
+    .barra .num { text-align: right; color: var(--suave); font-variant-numeric: tabular-nums; }
+    .textos li { margin-bottom: 8px; }
+    .insights li { margin-bottom: 8px; }
+    .error { color: #ff6b6b; }
+    @media (max-width: 520px) { .barra { grid-template-columns: 1fr 56px; } .barra .pista { grid-column: 1 / -1; order: 3; } }
+  </style>
+</head>
+<body>
+  <div class="fondo" aria-hidden="true"></div>
+  <main id="app">
+    <p class="kicker">SOLO PARA LÍDERES</p>
+    <h1 class="titulo">🛰️ Centro de Comando</h1>
+    <div id="login" class="tarjeta">
+      <div class="fila-login">
+        <input id="url" placeholder="URL de Apps Script (termina en /exec)">
+        <input id="clave" type="password" placeholder="Clave del panel">
+        <button class="boton principal" id="entrar">VER RESULTADOS</button>
+        <button class="boton secundario" id="demo">Ver con datos de ejemplo</button>
+        <p class="nota" id="estado"></p>
+      </div>
+    </div>
+    <div id="resultados"></div>
+  </main>
+
+  <script src="js/config.js"></script>
+  <script src="js/preguntas.js"></script>
+  <script>
+  (function () {
+    const $ = s => document.querySelector(s);
+    const leer = k => { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } };
+    const guardar = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+    const esc = s => String(s).replace(/^'/, '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    const mezclar = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+    $('#url').value = leer('panel-url') || CONFIG.URL_APPS_SCRIPT;
+    $('#clave').value = leer('panel-clave');
+
+    $('#entrar').onclick = async () => {
+      const url = $('#url').value.trim(), clave = $('#clave').value;
+      if (!url) return $('#estado').textContent = 'Falta la URL.';
+      $('#estado').textContent = 'Cargando...';
+      try {
+        const r = await fetch(url + (url.includes('?') ? '&' : '?') + 'clave=' + encodeURIComponent(clave));
+        const d = await r.json();
+        if (!d.ok) throw new Error(d.error || 'Error desconocido');
+        guardar('panel-url', url); guardar('panel-clave', clave);
+        $('#estado').textContent = '';
+        pintar(d.columnas, d.filas);
+      } catch (e) {
+        $('#estado').innerHTML = '<span class="error">No se pudo cargar: ' + esc(e.message) + '</span>';
+      }
+    };
+
+    $('#demo').onclick = () => { const d = datosDemo(); pintar(d.columnas, d.filas, true); };
+
+    function conteo(lista) {
+      const m = {};
+      lista.filter(Boolean).forEach(v => { m[v] = (m[v] || 0) + 1; });
+      return Object.entries(m).sort((a, b) => b[1] - a[1]);
+    }
+    function valoresDe(filas, titulo) {
+      const out = [];
+      filas.forEach(f => String(f[titulo] || '').split(' | ').filter(Boolean).forEach(v => out.push(v)));
+      return out;
+    }
+    const pctDe = (filas, titulo, patron) => {
+      const n = filas.length;
+      const k = filas.filter(f => patron.test(String(f[titulo] || ''))).length;
+      return n ? Math.round((k / n) * 100) : 0;
+    };
+
+    function barras(c, n) {
+      return c.map(([e, k]) => {
+        const p = Math.round((k / n) * 100);
+        return `<div class="barra"><span>${esc(e)}</span><div class="pista"><div style="width:${Math.max(p, 1)}%"></div></div><span class="num">${k} · ${p}%</span></div>`;
+      }).join('');
+    }
+
+    function pintar(columnas, filas, demo) {
+      const n = filas.length;
+      const cont = $('#resultados');
+      if (!n) { cont.innerHTML = '<p class="subtitulo">Todavía no hay respuestas.</p>'; return; }
+      const T = Object.fromEntries(columnas.map(c => [c[0], c[1]]));
+
+      const atencion = filas.filter(f => f['Atención']).length;
+      const aislan = pctDe(filas, T.Q04, /encierro|Me encierro|Finjo/);
+      const bateria = pctDe(filas, T.Q00, /Baja|Casi vacía|Apagada/);
+      const dudas = pctDe(filas, T.Q07, /dudas que nunca|confundido|alejado|no siento/);
+      const quiereHablar = pctDe(filas, T.Q13, /^Sí|No estoy seguro/);
+
+      const top = (id) => (conteo(valoresDe(filas, T[id]))[0] || ['—'])[0];
+      const insights = [
+        `El tema que más pesa en el grupo: <strong>${esc(top('Q03'))}</strong>. La batalla que más elegirían enfrentar: <strong>${esc(top('Q14'))}</strong>.`,
+        `${aislan}% tiende a <strong>aislarse o fingir</strong> cuando está mal. Conviene crear espacios pequeños donde hablar sea normal.`,
+        `${dudas}% describe su fe como confundida, lejana, seca o con dudas nunca habladas. Considera una noche de <strong>"preguntas sin filtro"</strong> usando las preguntas anónimas de abajo.`,
+        `${quiereHablar}% dijo que sí (o tal vez) quisiera hablar de una lucha con alguien de confianza. Lo que más piden de la iglesia: <strong>${esc(top('Q15'))}</strong>.`,
+      ];
+
+      let h = `
+        ${demo ? '<p class="nota">⚠️ Estás viendo DATOS DE EJEMPLO, no respuestas reales.</p>' : ''}
+        <div class="kpis">
+          <div class="kpi"><b>${n}</b><span>participantes</span></div>
+          <div class="kpi ${bateria >= 30 ? 'alerta' : ''}"><b>${bateria}%</b><span>con la batería baja o peor</span></div>
+          <div class="kpi"><b>${quiereHablar}%</b><span>quisiera hablar con alguien</span></div>
+          <div class="kpi ${atencion ? 'alerta' : ''}"><b>${atencion}</b><span>respuestas que requieren atención</span></div>
+        </div>
+        ${atencion ? `<div class="tarjeta" style="border-color:#ff6b6b"><strong>🚨 ${atencion} respuesta(s) requieren atención.</strong> No sabemos quién es. En la próxima reunión, recuerda al grupo que hay personas disponibles para hablar en privado y comparte una línea de ayuda.</div>` : ''}
+        <div class="tarjeta insights"><h3>💡 Lectura pastoral rápida</h3><ul>${insights.map(i => `<li>${i}</li>`).join('')}</ul></div>
+        <div class="tarjeta"><h3>Misión elegida</h3>${barras(conteo(filas.map(f => f['Misión'])), n)}</div>`;
+
+      const porDim = {};
+      Object.entries(PREGUNTAS).forEach(([id, p]) => {
+        if (p.tipo === 'abierta' || !T[id]) return;
+        (porDim[p.dim] = porDim[p.dim] || []).push(id);
+      });
+      Object.entries(porDim).forEach(([dim, ids]) => {
+        h += `<section class="grupo-dim"><h2>${dim.toUpperCase()}</h2>`;
+        ids.forEach(id => { h += `<div class="tarjeta"><h3>${esc(T[id])}</h3>${barras(conteo(valoresDe(filas, T[id])), n)}</div>`; });
+        h += '</section>';
+      });
+
+      h += '<section class="grupo-dim"><h2>💬 LO QUE ESCRIBIERON</h2><p class="nota" style="margin-bottom:12px">Cada lista está en orden aleatorio para proteger el anonimato.</p>';
+      columnas.filter(c => c[2] === 'abierta').forEach(([, titulo]) => {
+        const textos = mezclar(filas.map(f => f[titulo]).filter(Boolean));
+        if (!textos.length) return;
+        h += `<div class="tarjeta"><h3>${esc(titulo)} (${textos.length})</h3><ul class="textos">${textos.map(t => `<li>${esc(t)}</li>`).join('')}</ul></div>`;
+      });
+      h += '</section>';
+      cont.innerHTML = h;
+    }
+
+    function datosDemo() {
+      const columnas = [
+        ['Q00', 'Batería emocional', 'unica'], ['Q02', 'Pertenencia al grupo', 'unica'],
+        ['Q01', 'Reacción ante la presión', 'unica'], ['Q03', 'Lo que ocupa su cabeza', 'multiple'],
+        ['Q04', 'Qué hace cuando está mal', 'multiple'], ['Q05', 'Cuando alguien le falla', 'unica'],
+        ['Q06', 'Fe bajo presión', 'unica'], ['Q07', 'Relación con Dios hoy', 'unica'],
+        ['Q08', 'Pregunta que le haría a Dios', 'abierta'], ['Q09', 'Lo que más le cuesta decir', 'multiple'],
+        ['Q10', 'La máscara que usa', 'unica'], ['Q11', 'Lo que le preocupa y casi nunca dice', 'abierta'],
+        ['Q12', 'Cuando fracasa', 'unica'], ['Q13', '¿Quisiera hablar de una lucha?', 'unica'],
+        ['Q13_texto', 'La lucha (si la escribió)', 'abierta'], ['Q14', 'La batalla que enfrentaría primero', 'unica'],
+        ['Q15', 'Lo que necesita de la iglesia', 'multiple'], ['Q16', 'Lo que le pediría a Dios', 'abierta'],
+        ['Q17', 'Lo que la iglesia debería entender', 'abierta'],
+      ];
+      const ejemplos = {
+        Q08: ['¿Cómo sé que realmente me escuchas?', '¿Por qué sigo sintiéndome vacío si creo en ti?', '¿Por qué permites que pasen ciertas cosas?', '¿Cuál es tu propósito para mí?'],
+        Q11: ['Que no voy a ser suficiente para mis papás', 'Que me siento solo aunque esté rodeado de gente', 'El dinero en mi casa'],
+        Q16: ['Paz', 'Saber qué hacer con mi vida', 'Que mi familia esté bien', 'Sentirte cerca otra vez'],
+        Q17: ['Que no siempre estoy bien aunque sonría', 'Que tengo preguntas y no por eso soy rebelde'],
+      };
+      const elegir = a => a[Math.floor(Math.random() * a.length)];
+      const filas = Array.from({ length: 23 }, () => {
+        const f = { Fecha: '2026-01-01', 'Misión': elegir(['SHERLOCK', 'SUBMARINO', 'EL CULPABLE', 'PLANETA X', 'EL REINO']), Minutos: 9, 'Atención': '' };
+        columnas.forEach(([id, titulo, tipo]) => {
+          const p = PREGUNTAS[id];
+          if (tipo === 'abierta') f[titulo] = ejemplos[id] && Math.random() < 0.5 ? elegir(ejemplos[id]) : '';
+          else if (tipo === 'multiple') f[titulo] = mezclar(p.opciones.map(o => o[1])).slice(0, 1 + Math.floor(Math.random() * p.max)).join(' | ');
+          else f[titulo] = elegir(p.opciones)[1];
+        });
+        if (/Casi vacía|Apagada/.test(f['Batería emocional'])) f['Atención'] = 'Batería baja';
+        return f;
+      });
+      return { columnas, filas };
+    }
+  })();
+  </script>
+</body>
+</html>
