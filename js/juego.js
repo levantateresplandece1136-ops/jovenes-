@@ -43,12 +43,10 @@
     const nodo = el(`
       <section class="pantalla portada">
         <div class="glitch" data-texto="SIN FILTRO">SIN FILTRO</div>
-        <p class="subtitulo aparece">Una aventura. Tus decisiones. Una parte de ti que quizá nadie conoce.</p>
+        <p class="subtitulo aparece">5 misiones. Una elección. Tus decisiones cambian la historia.</p>
         <div class="tarjeta-anonima aparece" style="animation-delay:.4s">
-          <p>🔒 <strong>No necesitas decirnos quién eres.</strong></p>
-          <p>No hay respuestas correctas. No estamos intentando descubrir tus secretos.</p>
-          <p>Solo queremos entender mejor lo que viven los jóvenes de ${CONFIG.NOMBRE_GRUPO}.</p>
-          <p class="nota">No pedimos nombre, correo ni teléfono. Elige lo que más se parezca a ti.</p>
+          <p>🎧 Juega solo(a), a tu ritmo. Dura unos 10 minutos.</p>
+          <p class="nota">🔒 No te pediremos tu nombre.</p>
         </div>
         <button class="boton principal aparece" style="animation-delay:.8s" data-accion="elegir">ELEGIR MISIÓN</button>
         ${hayProgreso ? '<button class="boton secundario aparece" style="animation-delay:1s" data-accion="continuar">Continuar mi misión</button>' : ''}
