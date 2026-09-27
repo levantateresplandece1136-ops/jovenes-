@@ -15,8 +15,8 @@ del grupo sin importar qué misión eligió cada uno.
 | 4 | 🚀 **Planeta X**: la misión imposible | Liderazgo, identidad, futuro | Energía 12% → 100% |
 | 5 | 👑 **El Reino Perdido** | Lealtad, propósito, fe | Fragmentos de corona |
 
-Los resultados llegan **a tu correo** (uno por cada misión completada, más un reporte semanal
-con el "mapa del grupo") y también los puedes ver en el **Centro de Comando** (`panel.html`).
+Los resultados se guardan de forma privada en el servidor donde está publicado el juego (Vercel),
+te llega **un WhatsApp con cada misión completada** y los puedes ver todos juntos en el **Centro de Comando** (`panel.html`).
 
 ---
 
@@ -47,7 +47,36 @@ Todas las preguntas de texto (✍️) se pueden saltar.
 
 ---
 
-## Instalación (unos 20 minutos, gratis)
+## Activar los avisos por WhatsApp (5 minutos)
+
+Los avisos usan [CallMeBot](https://www.callmebot.com/blog/free-api-whatsapp-messages/), un servicio gratuito
+que manda mensajes de WhatsApp **a tu propio número**. Los mensajes llegan desde el número del bot, así que
+no se revela nada del joven que respondió.
+
+1. Sigue las instrucciones de la página de CallMeBot: guarda su número en tus contactos y mándale por
+   WhatsApp el mensaje de autorización que ahí indican.
+2. El bot te responde con tu **apikey** (un número).
+3. En Vercel, entra al proyecto `sin-filtro-jovenes` → **Settings → Environment Variables** y agrega:
+   - `WHATSAPP_TELEFONO` = tu número con código de país, por ejemplo `+5215512345678`
+   - `WHATSAPP_APIKEY` = la apikey que te dio el bot
+4. Vuelve a publicar (**Deployments → ⋯ → Redeploy**).
+
+> CallMeBot es un servicio externo gratuito: los textos de cada respuesta pasan por sus servidores para
+> llegar a tu WhatsApp. Si prefieres no usarlo, deja esas dos variables vacías y consulta todo en el panel.
+
+## Tu Centro de Comando
+
+Abre `https://sin-filtro-jovenes.vercel.app/panel.html` y escribe la clave del panel
+(está en Vercel → **Settings → Environment Variables → `PANEL_CLAVE`**; puedes cambiarla ahí).
+
+---
+
+## Alternativa: guardar en Google Sheets y recibir por correo
+
+Si prefieres Google Sheets y correo en lugar de Vercel y WhatsApp, sigue estos pasos y pon la URL de
+Apps Script en `URL_ENVIO` y `URL_RESULTADOS` de `js/config.js`.
+
+### Instalación con Google (unos 20 minutos, gratis)
 
 ### Paso 1: Crea la hoja donde se guardarán las respuestas
 1. Entra a [sheets.new](https://sheets.new) con tu cuenta de Google y llámala `Sin Filtro - Respuestas`.
@@ -76,7 +105,8 @@ Todas las preguntas de texto (✍️) se pueden saltar.
 Abre [`js/config.js`](js/config.js) y pega la URL:
 
 ```js
-URL_APPS_SCRIPT: 'https://script.google.com/macros/s/XXXXXXXX/exec',
+URL_ENVIO: 'https://script.google.com/macros/s/XXXXXXXX/exec',
+URL_RESULTADOS: 'https://script.google.com/macros/s/XXXXXXXX/exec',
 NOMBRE_GRUPO: 'Jóvenes de mi iglesia',
 LINEA_AYUDA: 'Línea de ayuda de tu país: 000 000 0000',
 ```
@@ -117,7 +147,7 @@ Genera un código QR con la dirección (por ejemplo en cualquier generador de QR
 ## 🚨 Alertas
 
 El script revisa los textos buscando palabras de riesgo (ideas de muerte, autolesión, abuso, violencia).
-Si aparecen, te llega un correo inmediato marcado 🚨 y la fila queda marcada como `REVISAR` en la hoja.
+Si aparecen, el aviso llega marcado 🚨 ATENCIÓN y la respuesta queda marcada como `REVISAR` en el panel.
 Como es anónimo **no sabrás quién fue**, y está bien. Qué hacer:
 
 - En la próxima reunión, di a todo el grupo que hay personas de confianza disponibles y comparte una línea de ayuda.
@@ -136,11 +166,13 @@ js/preguntas.js       → banco maestro: 17 preguntas y sus opciones
 js/historias.js       → las 5 misiones: escenas y opciones adaptadas a cada historia
 js/juego.js           → motor del juego
 css/estilos.css       → diseño
-apps-script/Codigo.gs → backend: guarda en Google Sheets y envía los correos
+api/respuesta.js      → servidor: guarda cada respuesta (privado) y avisa por WhatsApp
+api/resultados.js     → servidor: entrega los resultados al panel (con clave)
+apps-script/Codigo.gs → alternativa: guardar en Google Sheets y recibir por correo
 ```
 
 ### Probarlo sin configurar nada
-Abre `index.html` en tu navegador. Sin URL en `config.js` funciona en **modo prueba** (no envía nada).
+Abre `index.html` en tu navegador. Abierto como archivo local no puede enviar nada (el servidor solo existe en Vercel).
 Abre `panel.html` y presiona **"Ver con datos de ejemplo"** para ver cómo se verá tu Centro de Comando.
 
 ### Editar o agregar historias
@@ -151,7 +183,7 @@ Así los resultados seguirán siendo comparables.
 ## Privacidad
 
 - No se piden ni se guardan nombres, correos, teléfonos, direcciones IP ni datos del dispositivo.
-- Se guarda solo: fecha (sin hora), misión elegida, minutos que tardó y las respuestas.
+- Se guarda solo: fecha (sin hora), misión elegida, minutos que tardó y las respuestas, en un almacenamiento **privado** de Vercel.
 - El `ID` de cada fila es aleatorio; solo sirve para unir la respuesta del "nivel extra" con su misión.
 - En el reporte y el panel, los textos abiertos se muestran en orden aleatorio.
 - Con grupos muy pequeños (menos de 5 personas) es más fácil adivinar quién escribió qué: tenlo en cuenta al compartir resultados.

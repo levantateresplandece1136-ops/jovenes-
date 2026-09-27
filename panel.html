@@ -40,7 +40,7 @@
     <h1 class="titulo">🛰️ Centro de Comando</h1>
     <div id="login" class="tarjeta">
       <div class="fila-login">
-        <input id="url" placeholder="URL de Apps Script (termina en /exec)">
+        <input id="url" placeholder="Dirección de resultados">
         <input id="clave" type="password" placeholder="Clave del panel">
         <button class="boton principal" id="entrar">VER RESULTADOS</button>
         <button class="boton secundario" id="demo">Ver con datos de ejemplo</button>
@@ -60,7 +60,7 @@
     const esc = s => String(s).replace(/^'/, '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
     const mezclar = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 
-    $('#url').value = leer('panel-url') || CONFIG.URL_APPS_SCRIPT;
+    $('#url').value = leer('panel-url') || CONFIG.URL_RESULTADOS;
     $('#clave').value = leer('panel-clave');
 
     $('#entrar').onclick = async () => {

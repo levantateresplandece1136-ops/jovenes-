@@ -215,16 +215,22 @@
   }
 
   function enviar(datos) {
-    if (!CONFIG.URL_APPS_SCRIPT) {
+    if (!CONFIG.URL_ENVIO) {
       console.info('[Modo prueba] No hay URL de Apps Script. Esto se habría enviado:', datos);
       return Promise.resolve(true);
     }
-    return fetch(CONFIG.URL_APPS_SCRIPT, {
+    const externo = /^https?:/.test(CONFIG.URL_ENVIO) && !CONFIG.URL_ENVIO.startsWith(location.origin);
+    return fetch(CONFIG.URL_ENVIO, {
       method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      keepalive: true,
+      // Apps Script (externo) solo acepta envíos "no-cors" en texto plano.
+      mode: externo ? 'no-cors' : 'same-origin',
+      headers: { 'Content-Type': externo ? 'text/plain;charset=utf-8' : 'application/json' },
       body: JSON.stringify(datos),
-    }).then(() => true).catch(() => {
+    }).then(r => {
+      if (!externo && !r.ok) throw new Error('HTTP ' + r.status);
+      return true;
+    }).catch(() => {
       const pendientes = leer(CLAVE_PENDIENTES) || [];
       pendientes.push(datos);
       guardar(CLAVE_PENDIENTES, pendientes);
@@ -234,7 +240,7 @@
 
   function reintentarPendientes() {
     const pendientes = leer(CLAVE_PENDIENTES);
-    if (!pendientes || !pendientes.length || !CONFIG.URL_APPS_SCRIPT) return;
+    if (!pendientes || !pendientes.length || !CONFIG.URL_ENVIO) return;
     borrar(CLAVE_PENDIENTES);
     pendientes.forEach(enviar);
   }

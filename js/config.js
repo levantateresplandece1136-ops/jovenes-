@@ -1,11 +1,16 @@
 /*
  * CONFIGURACIÓN — lo único que necesitas editar.
- * Sigue los pasos del README.md para obtener la URL de Apps Script.
+ * Normalmente no necesitas cambiar nada aquí, salvo LINEA_AYUDA.
  */
 const CONFIG = {
-  // URL de tu aplicación web de Google Apps Script (termina en /exec).
-  // Si la dejas vacía, el juego funciona en "modo prueba" y no envía nada.
-  URL_APPS_SCRIPT: '',
+  // Adónde se envían las respuestas. '/api/respuesta' = el servidor de Vercel
+  // donde está publicado el juego (guarda y te avisa por WhatsApp).
+  // Si usas Google Apps Script en su lugar, pega aquí su URL (termina en /exec).
+  // Si lo dejas vacío, el juego funciona en "modo prueba" y no envía nada.
+  URL_ENVIO: '/api/respuesta',
+
+  // De dónde lee el panel los resultados.
+  URL_RESULTADOS: '/api/resultados',
 
   // Nombre que verán los jóvenes en la pantalla inicial.
   NOMBRE_GRUPO: 'Grupo de Jóvenes',
