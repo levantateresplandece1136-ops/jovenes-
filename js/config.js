@@ -19,5 +19,5 @@ const CONFIG = {
   // y una línea de ayuda de tu país (por ejemplo, la línea de prevención del
   // suicidio o de salud mental). Déjalo vacío para no mostrarlo.
   CONTACTO_APOYO: 'Si necesitas hablar con alguien, los líderes del grupo estamos para escucharte, sin juicio.',
-  LINEA_AYUDA: '', // Ej.: 'Línea de la Vida (México): 800 911 2000'
+  LINEA_AYUDA: 'Línea de la Vida: 800 911 2000 (gratis, 24 horas, todo México)',
 };
