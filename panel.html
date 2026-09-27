@@ -79,6 +79,22 @@
       }
     };
 
+    async function borrarTodo() {
+      const escrito = prompt('Se borrarán TODAS las respuestas y no se pueden recuperar.\n\nEscribe BORRAR para confirmar:');
+      if (escrito !== 'BORRAR') return;
+      const url = $('#url').value.trim().replace(/resultados(\?.*)?$/, 'borrar');
+      try {
+        const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ clave: $('#clave').value, confirmar: 'BORRAR' }) });
+        const d = await r.json();
+        if (!d.ok) throw new Error(d.error || 'Error');
+        alert('Listo: se borraron ' + d.borradas + ' respuesta(s).');
+        $('#entrar').click();
+      } catch (e) {
+        alert('No se pudo borrar: ' + e.message);
+      }
+    }
+
     $('#demo').onclick = () => { const d = datosDemo(); pintar(d.columnas, d.filas, true); };
 
     function conteo(lista) {
@@ -154,7 +170,12 @@
         h += `<div class="tarjeta"><h3>${esc(titulo)} (${textos.length})</h3><ul class="textos">${textos.map(t => `<li>${esc(t)}</li>`).join('')}</ul></div>`;
       });
       h += '</section>';
+      if (!demo) h += `<div class="tarjeta" style="margin-top:28px"><h3>🗑️ Empezar de cero</h3>
+        <p class="nota" style="margin-bottom:8px">Borra todas las respuestas guardadas (por ejemplo, tus pruebas o una ronda anterior). No se puede deshacer.</p>
+        <button class="boton secundario" id="borrar">Borrar todas las respuestas</button></div>`;
       cont.innerHTML = h;
+      const b = $('#borrar');
+      if (b) b.onclick = borrarTodo;
     }
 
     function datosDemo() {
